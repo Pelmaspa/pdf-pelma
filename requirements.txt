@@ -2,3 +2,5 @@ Flask==2.3.3
 Flask-Cors==4.0.0
 reportlab==4.0.8
 fpdf2==2.7.6
+gunicorn==23.0.0
+pyppeteer==2.0.0
