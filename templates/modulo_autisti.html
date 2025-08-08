@@ -138,48 +138,10 @@
   }
 </script>
 
-  <button onclick="inviaModulo('modulo_autisti')">📧 Invia via Email</button>
+  
   <script src="/static/firma.js"></script>
 
-<script>
-function inviaModulo(modulo) {
-  const inputs = document.querySelectorAll('input');
-  let formData = {};
-  inputs.forEach(input => {
-    const label = input.previousSibling?.textContent?.trim() || input.placeholder || 'campo';
-    formData[label] = input.value;
-  });
 
-  const firma1 = document.getElementById('firma1')?.toDataURL() || "";
-  const firma2 = document.getElementById('firma2')?.toDataURL() || "";
-  const firmaCanvas = document.getElementById('signature-pad')?.toDataURL() || "";
-
-  fetch("/invia_modulo", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      formData: formData,
-      firma1: firma1 || firmaCanvas,
-      firma2: firma2 || "",
-      modulo: modulo
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.errore) {
-      alert("Errore: " + data.errore);
-    } else {
-      alert("Modulo inviato con successo!");
-    }
-  })
-  .catch(err => {
-    alert("Errore durante l'invio.");
-    console.error(err);
-  });
-}
-</script>
 
 
 <script>
@@ -210,52 +172,6 @@ window.onload = () => {
 };
 </script>
 
-
-<script>
-async function htmlConFirmeInline() {
-  const clone = document.documentElement.cloneNode(true);
-  const canvases = Array.from(clone.querySelectorAll('canvas'));
-  canvases.forEach((c) => {
-    try {
-      const live = c.id ? document.getElementById(c.id) : null;
-      const data = live ? live.toDataURL("image/png") : null;
-      const img = document.createElement('img');
-      img.setAttribute('alt', c.id || 'firma');
-      img.setAttribute('width', c.getAttribute('width') || (live? live.width : 500));
-      img.setAttribute('height', c.getAttribute('height') || (live? live.height : 150));
-      if (data) img.setAttribute('src', data);
-      img.style.border = c.style.border || '1px solid #000';
-      c.replaceWith(img);
-    } catch (e) { console.error(e); }
-  });
-
-  clone.querySelectorAll('script').forEach(s => s.remove());
-
-  const style = document.createElement('style');
-  style.textContent = `
-    @page { size: A4; margin: 12mm; }
-    html, body { width: 210mm; min-height: 297mm; }
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  `;
-  clone.querySelector('head')?.appendChild(style);
-
-  const html = '<!DOCTYPE html>' + clone.outerHTML;
-  return html;
-}
-
-async function inviaPdfCompleto(modulo) {
-  try {
-    const html = await htmlConFirmeInline();
-    const subject = 'Modulo ' + modulo + ' compilato';
-    const res = await fetch('/send_pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html, subject, filename: modulo + '.pdf' }) });
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.error || 'Errore invio');
-    alert('PDF completo inviato via email ✅');
-  } catch (err) { console.error(err); alert('Errore invio PDF: ' + err.message); }
-}
-</script>
-
-<button onclick="inviaPdfCompleto('modulo_autisti')">📧 Invia PDF completo via Email</button>
 </body>
 </html>
 

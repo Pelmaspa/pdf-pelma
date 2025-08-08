@@ -138,48 +138,10 @@
     }
   </script>
 
-  <button onclick="inviaModulo('modulo_visitatori')">📧 Invia via Email</button>
+  
   <script src="/static/firma.js"></script>
 
-<script>
-function inviaModulo(modulo) {
-  const inputs = document.querySelectorAll('input');
-  let formData = {};
-  inputs.forEach(input => {
-    const label = input.previousSibling?.textContent?.trim() || input.placeholder || 'campo';
-    formData[label] = input.value;
-  });
 
-  const firma1 = document.getElementById('firma1')?.toDataURL() || "";
-  const firma2 = document.getElementById('firma2')?.toDataURL() || "";
-  const firmaCanvas = document.getElementById('signature-pad')?.toDataURL() || "";
-
-  fetch("/invia_modulo", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      formData: formData,
-      firma1: firma1 || firmaCanvas,
-      firma2: firma2 || "",
-      modulo: modulo
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.errore) {
-      alert("Errore: " + data.errore);
-    } else {
-      alert("Modulo inviato con successo!");
-    }
-  })
-  .catch(err => {
-    alert("Errore durante l'invio.");
-    console.error(err);
-  });
-}
-</script>
 
 
 <script>
@@ -207,25 +169,62 @@ document.addEventListener("DOMContentLoaded", function() {
 
 <script>
 async function htmlConFirmeInline() {
-  const clone = document.documentElement.cloneNode(true);
-  const canvases = Array.from(clone.querySelectorAll('canvas'));
-  canvases.forEach((c) => {
-    try {
-      const live = c.id ? document.getElementById(c.id) : null;
-      const data = live ? live.toDataURL("image/png") : null;
-      const img = document.createElement('img');
-      img.setAttribute('alt', c.id || 'firma');
-      img.setAttribute('width', c.getAttribute('width') || (live? live.width : 500));
-      img.setAttribute('height', c.getAttribute('height') || (live? live.height : 150));
-      if (data) img.setAttribute('src', data);
-      img.style.border = c.style.border || '1px solid #000';
-      c.replaceWith(img);
-    } catch (e) { console.error(e); }
+  const doc = document;
+  const clone = doc.documentElement.cloneNode(true);
+  const qsa = (root, sel) => Array.from(root.querySelectorAll(sel));
+
+  // 1) Copia valori degli INPUT
+  qsa(clone, 'input').forEach(c => {
+    const id = c.id;
+    const live = id ? doc.getElementById(id) : null;
+    if (!live) return;
+    const t = (live.type || '').toLowerCase();
+    if (['text','number','date','time','email','tel','hidden','search','url','password'].includes(t)) {
+      c.setAttribute('value', live.value || '');
+    } else if (t === 'checkbox' || t === 'radio') {
+      if (live.checked) c.setAttribute('checked','checked'); else c.removeAttribute('checked');
+      if (live.value != null) c.setAttribute('value', live.value);
+    }
   });
 
-  clone.querySelectorAll('script').forEach(s => s.remove());
+  // 2) Copia TEXTAREA
+  qsa(clone, 'textarea').forEach(c => {
+    const id = c.id;
+    const live = id ? doc.getElementById(id) : null;
+    if (!live) return;
+    c.textContent = live.value || '';
+  });
 
-  const style = document.createElement('style');
+  // 3) Copia SELECT
+  qsa(clone, 'select').forEach(c => {
+    const id = c.id;
+    const live = id ? doc.getElementById(id) : null;
+    if (!live) return;
+    const val = live.value;
+    qsa(c, 'option').forEach(opt => {
+      if (opt.value === val) opt.setAttribute('selected','selected');
+      else opt.removeAttribute('selected');
+    });
+  });
+
+  // 4) Canvas delle firme -> <img src="data:...">
+  qsa(clone, 'canvas').forEach(c => {
+    try {
+      const live = c.id ? doc.getElementById(c.id) : null;
+      const data = live ? live.toDataURL('image/png') : null;
+      const img = clone.createElement('img');
+      img.alt = c.id || 'firma';
+      img.width = parseInt(c.getAttribute('width') || (live ? live.width : 500), 10);
+      img.height = parseInt(c.getAttribute('height') || (live ? live.height : 150), 10);
+      if (data) img.src = data;
+      img.style.border = c.style.border || '1px solid #000';
+      c.replaceWith(img);
+    } catch(e){ /* ignore */ }
+  });
+
+  // 5) Rimuovi script e aggiungi stile stampa
+  qsa(clone, 'script').forEach(s => s.remove());
+  const style = clone.createElement('style');
   style.textContent = `
     @page { size: A4; margin: 12mm; }
     html, body { width: 210mm; min-height: 297mm; }
@@ -233,22 +232,26 @@ async function htmlConFirmeInline() {
   `;
   clone.querySelector('head')?.appendChild(style);
 
-  const html = '<!DOCTYPE html>' + clone.outerHTML;
-  return html;
+  return '<!DOCTYPE html>' + clone.outerHTML;
 }
 
-async function inviaPdfCompleto(modulo) {
-  try {
-    const html = await htmlConFirmeInline();
-    const subject = 'Modulo ' + modulo + ' compilato';
-    const res = await fetch('/send_pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html, subject, filename: modulo + '.pdf' }) });
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.error || 'Errore invio');
+// Opzionale: funzione chiamabile da un bottone esterno o da index.html
+async function sendPdfCompleto(modulo) {
+  const html = await htmlConFirmeInline();
+  const subject = 'Modulo ' + (modulo || 'compilato');
+  const res = await fetch('/send_pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ html, subject, filename: (modulo || 'modulo') + '.pdf' })
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    alert('Errore invio PDF: ' + (data.error || 'sconosciuto'));
+  } else {
     alert('PDF completo inviato via email ✅');
-  } catch (err) { console.error(err); alert('Errore invio PDF: ' + err.message); }
+  }
 }
 </script>
 
-<button onclick="inviaPdfCompleto('modulo_visitatori')">📧 Invia PDF completo via Email</button>
 </body>
 </html>
