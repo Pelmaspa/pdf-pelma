@@ -181,5 +181,86 @@ async function sendPdfCompleto(modulo) {
 }
 </script>
 
+
+<script>
+(function(){
+  const CANVAS_ID = 'signature-pad';
+
+  function getPos(canvas, evt) {
+    const rect = canvas.getBoundingClientRect();
+    if (evt.touches && evt.touches.length) {
+      return {
+        x: (evt.touches[0].clientX - rect.left),
+        y: (evt.touches[0].clientY - rect.top)
+      };
+    } else {
+      return {
+        x: (evt.clientX - rect.left),
+        y: (evt.clientY - rect.top)
+      };
+    }
+  }
+
+  function attachSignaturePad() {
+    const canvas = document.getElementById(CANVAS_ID);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+
+    let drawing = false;
+    let last = null;
+
+    function start(e){
+      drawing = true;
+      last = getPos(canvas, e);
+      e.preventDefault && e.preventDefault();
+    }
+    function move(e){
+      if(!drawing) return;
+      const pos = getPos(canvas, e);
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      last = pos;
+      e.preventDefault && e.preventDefault();
+    }
+    function end(e){
+      drawing = false;
+      last = null;
+      e.preventDefault && e.preventDefault();
+    }
+
+    // Mouse
+    canvas.addEventListener('mousedown', start);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+
+    // Touch (non-passive to allow preventDefault)
+    canvas.addEventListener('touchstart', start, {passive:false});
+    canvas.addEventListener('touchmove', move, {passive:false});
+    canvas.addEventListener('touchend', end, {passive:false});
+    canvas.addEventListener('touchcancel', end, {passive:false});
+
+    // Optional: disable page scroll while signing on touch
+    canvas.style.touchAction = 'none';
+
+    // Expose clear function
+    window.clearSignature = function(){
+      const c = document.getElementById(CANVAS_ID);
+      if(!c) return;
+      const ctx2 = c.getContext('2d');
+      ctx2.setTransform(1,0,0,1,0,0);
+      ctx2.clearRect(0,0,c.width,c.height);
+      ctx2.beginPath();
+    };
+  }
+
+  window.addEventListener('load', attachSignaturePad);
+})();
+</script>
+
 </body>
 </html>
