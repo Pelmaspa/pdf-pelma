@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8">
+  <title>Permesso Ingresso Visitatori</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    input[type="text"], input[type="date"], input[type="time"], textarea {
+      border: none;
+      border-bottom: 1px solid #000;
+      background: transparent;
+      font-size: 1em;
+      padding: 2px 5px;
+      min-width: 150px;
+    }
+    canvas {
+      border: 1px solid #000;
+      margin-top: 10px;
+    }
+    .firma-container {
+      margin-top: 20px;
+    }
+    button {
+      margin-top: 30px;
+      margin-right: 10px;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align: center;">PELMA SPA – BASSANO BRESCIANO (BS)</h2>
+  <p><strong>PEL 03 – INFORMAZIONE FORMAZIONE E ADDESTRAMENTO DEL PERSONALE IN SITU</strong><br>
+  ALLEGATO 3 (rev. Giu.18) - Foglio 1 di 1</p>
+
+  <h3 style="text-align: center;">PERMESSO INGRESSO PER VISITATORI</h3>
+
+  <p><strong>DATA</strong> <input type="date"> &nbsp; <strong>N.</strong> <input type="text" style="width: 50px;"></p>
+
+  <p>Il Sig. <input type="text" placeholder="Nome visitatore"> della ditta/Ente <input type="text" placeholder="Ditta/Ente"> è autorizzato ad entrare in stabilimento per un colloquio con il Sig. <input type="text" placeholder="Referente Pelma"></p>
+
+  <ul>
+    <li>Nello stabilimento esistono rischi generici e specifici per la sicurezza: è richiesta prudenza.</li>
+    <li>È obbligatorio osservare le norme antinfortunistiche e le disposizioni del personale Pelma.</li>
+    <li>Il permesso è valido solo per il motivo indicato, e non per accedere ad altre persone o aree.</li>
+    <li>I visitatori devono dichiarare eventuali materiali propri introdotti nello stabilimento.</li>
+    <li>L’uscita di materiali/documenti Pelma deve essere autorizzata con appositi documenti.</li>
+  </ul>
+
+  <p>Lo stabilimento è composto da: stoccaggio materie prime, produzione poliuretano, maturazione, stoccaggio prodotto finito e lavorazione poliuretano espanso.</p>
+
+  <p style="font-weight: bold; color: red;">È FATTO ASSOLUTO DIVIETO ENTRARE NEI REPARTI PRODUTTIVI O NEI DEPOSITI SE NON ACCOMPAGNATI DAL PERSONALE PELMA</p>
+
+  <h4>Norme di comportamento:</h4>
+  <ol>
+    <li>VIETATO FUMARE.</li>
+    <li>Vietato accendere fiamme libere senza autorizzazione.</li>
+    <li>Circolazione interna secondo norme stradali (15 km/h, precedenze, sosta sicura).</li>
+    <li>Obbligo di seguire segnali e percorsi designati (pedoni e automezzi).</li>
+    <li>Divieto per portatori di pacemaker/protesi di accedere a ricarica carrelli o saldature.</li>
+  </ol>
+
+  <p>In caso di emergenza/incendio contattare i referenti aziendali per indicazioni sulle vie di fuga e raccolta. Sono affisse le planimetrie con le vie di evacuazione.</p>
+
+  <p>Il visitatore dichiara di aver ricevuto informazioni relative al Piano di Emergenza Interna, al Modulo di Notifica (D.Lgs. 105/15) e alla brochure informativa.</p>
+
+  <div class="firma-container">
+    <p><strong>Firma per accettazione di quanto sopra:</strong></p>
+    <canvas id="firma1" width="500" height="150"></canvas><br>
+    <button onclick="clearCanvas('firma1')">Cancella Firma</button>
+  </div>
+
+  <p><strong>Ora entrata</strong> <input type="time"> <strong>Ora uscita</strong> <input type="time"> <strong>Firma referente colloquio:</strong></p>
+  <div class="firma-container">
+    <canvas id="firma2" width="500" height="150"></canvas><br>
+    <button onclick="clearCanvas('firma2')">Cancella Firma</button>
+  </div>
+
+  <button onclick="window.print()">📄 Salva come PDF</button>
+  
+
+  <script>
+    function initCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+
+      canvas.addEventListener('mousedown', () => { drawing = true; });
+      canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
+      canvas.addEventListener('mouseout', () => { drawing = false; ctx.beginPath(); });
+      canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#000';
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+      });
+
+      canvas.addEventListener('touchstart', () => { drawing = true; }, { passive: true });
+      canvas.addEventListener('touchend', () => { drawing = false; ctx.beginPath(); }, { passive: true });
+      canvas.addEventListener('touchmove', (e) => {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#000';
+        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+      }, { passive: true });
+    }
+
+    function clearCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+    }
+
+    window.onload = () => {
+      initCanvas('firma1');
+      initCanvas('firma2');
+    }
+  </script>
+
+  <button onclick="inviaModulo('modulo_visitatori')">📧 Invia via Email</button>
+  <script src="/static/firma.js"></script>
+
+<script>
+function inviaModulo(modulo) {
+  const inputs = document.querySelectorAll('input');
+  let formData = {};
+  inputs.forEach(input => {
+    const label = input.previousSibling?.textContent?.trim() || input.placeholder || 'campo';
+    formData[label] = input.value;
+  });
+
+  const firma1 = document.getElementById('firma1')?.toDataURL() || "";
+  const firma2 = document.getElementById('firma2')?.toDataURL() || "";
+  const firmaCanvas = document.getElementById('signature-pad')?.toDataURL() || "";
+
+  fetch("/invia_modulo", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      formData: formData,
+      firma1: firma1 || firmaCanvas,
+      firma2: firma2 || "",
+      modulo: modulo
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.errore) {
+      alert("Errore: " + data.errore);
+    } else {
+      alert("Modulo inviato con successo!");
+    }
+  })
+  .catch(err => {
+    alert("Errore durante l'invio.");
+    console.error(err);
+  });
+}
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  ['firma1', 'firma2'].forEach(id => {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    canvas.style.touchAction = "none";
+    let signing = false;
+    canvas.addEventListener("touchstart", () => {
+      signing = true;
+      document.body.style.overflow = "hidden";
+    });
+    canvas.addEventListener("touchend", () => {
+      signing = false;
+      document.body.style.overflow = "auto";
+    });
+    canvas.addEventListener("touchmove", (e) => {
+      if (signing) e.preventDefault();
+    }, { passive: false });
+  });
+});
+</script>
+
+</body>
+</html>

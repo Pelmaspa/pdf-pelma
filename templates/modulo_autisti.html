@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8">
+  <title>Permesso Ingresso Autisti</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    input[type="text"], input[type="date"], input[type="time"] {
+      border: none;
+      border-bottom: 1px solid #000;
+      background: transparent;
+      font-size: 1em;
+      padding: 2px 5px;
+      width: auto;
+      min-width: 100px;
+    }
+    .firma {
+      margin-top: 40px;
+    }
+    button {
+      margin-top: 40px;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align: center;">PELMA SPA – BASSANO BRESCIANO (BS)</h2>
+  <p><strong>PEL 03 – INFORMAZIONE FORMAZIONE E ADDESTRAMENTO DEL PERSONALE IN SITU</strong><br>
+  ALLEGATO 4 (rev. Mag.25)<br>
+  Foglio 1 di 1</p>
+
+  <h3>PERMESSO DI ENTRATA</h3>
+  <p><strong>PER OPERAZIONI DI SCARICO E/O ALTRE OPERAZIONI DI CONSEGNA O PRESA DI MATERIALE</strong></p>
+
+  <p>Il Sig. <input type="text" placeholder="Nome e Cognome"> della ditta <input type="text" placeholder="Nome Ditta"> è autorizzato a scaricare al reparto <strong>STOCCAGGIO</strong> i materiali: <input type="text" placeholder="Materiali"></p>
+
+  <p>Data <input type="date"> ora entrata <input type="time"> ora uscita <input type="time"></p>
+
+  <ul>
+    <li>nello stabilimento, in conseguenza delle attività che vi si svolgono, esistono rischi generici e specifici per la sicurezza: pertanto chiunque accede allo stabilimento è tenuto ad avere, oltre alla normale prudenza, la prudenza specifica di chi è consapevole dei pericoli esistenti;</li>
+    <li>è fatto obbligo di osservare, oltre ai regolamenti, discipline e norme antinfortunistiche vigenti nello stabilimento, le disposizioni impartite dal nostro personale;</li>
+    <li>il permesso è valido esclusivamente per lo scarico indicato e limitatamente al punto di scarico. Ogni tentativo di visitare persone o zone diverse da quelle assegnate, come pure l’interno dello stesso stoccaggio delle materie prime, provocherà l’immediato allontanamento dell’autotrasportatore;</li>
+    <li>la connessione del bocchettone di scarico alla cisterna viene effettuata dall’autotrasportatore su supervisione del nostro operatore;</li>
+    <li>l’uscita di materiali e documenti appartenenti alla Società PELMA S.p.A. deve essere appositamente autorizzata;</li>
+  </ul>
+
+  <p>Lo stabilimento è costituito da cinque reparti: stoccaggio materie prime, produzione di poliuretano espanso, maturazione del poliuretano espanso, stoccaggio del prodotto finito e lavorazione del poliuretano espanso.</p>
+
+  <p style="font-weight: bold; color: red;">È FATTO ASSOLUTO DIVIETO DI ENTRARE NEI REPARTI PRODUTTIVI O NEI DEPOSITI SE NON ACCOMPAGNATI DAL PERSONALE PELMA</p>
+
+  <h4>Norme di comportamento all’interno dello stabilimento</h4>
+  <ol>
+    <li>All’interno dello stabilimento è assolutamente VIETATO FUMARE (anche sul proprio automezzo).</li>
+    <li>È vietato accendere fiamme libere (è necessario farsi rilasciare il “permesso di fuoco” dai responsabili).</li>
+    <li>Le norme di circolazione all’interno dello stabilimento sono uguali a quelle in vigore nelle strade pubbliche; la precedenza spetta ai veicoli che provengono dalla propria destra; è fatto obbligo a tutti i veicoli di tenere la destra; il limite di velocità con i mezzi all’interno dello stabilimento è di 15 km/h.</li>
+    <li>È obbligatorio rispettare i segnali di prescrizione presenti nello stabilimento (divieto di accesso alle persone non autorizzate, divieto di transito, etc.).</li>
+    <li>I veicoli in sosta non devono creare intralcio all’attività aziendale; è vietato circolare nello stabilimento con le sponde degli automezzi abbassate; è vietato abbandonare il mezzo all’interno dello stabilimento, prima, durante e dopo le operazioni di scarico. Il veicolo deve circolare chiuso e con il carico in posizione di sicurezza e vincolato per evitare cadute accidentali.</li>
+    <li>È fatto divieto ai portatori di pacemaker o protesi di accedere al locale ricarica carrelli e di avvicinarsi alle operazioni di saldatura eventualmente in corso.</li>
+  </ol>
+
+  <p>In caso di emergenza e/o d’incendio contattare i preposti referenti aziendali per ricevere istruzioni e indicazioni sulle vie di fuga, sui punti di raccolta e sulle modalità di allontanamento o evacuazione.</p>
+
+  <p>Sono affisse in più punti dello stabilimento le norme di comportamento in caso di emergenza, con le relative planimetrie recanti i luoghi di raccolta in caso di evacuazione dello stabilimento.</p>
+
+  <p>Il visitatore dichiara di aver ricevuto le informazioni per gli esterni relative al Piano di Emergenza Interna e preso visione del Modulo di Notifica e di Informazione di cui all’allegato 5 del D.Lgs. 105/15 nonché della brochure contenente le disposizioni vigenti all’interno dello stabilimento.</p>
+
+  
+    <div class="firma">
+    <p>Firma disegnata qui sotto (usa dito o mouse):</p>
+    <canvas id="signature-pad" width="500" height="200" style="border:1px solid #000;"></canvas>
+    <br>
+    <button onclick="clearSignature()">Cancella Firma</button>
+    <br><br>
+
+    <p>Firma per accettazione di quanto sopra: <input type="text" placeholder="Firma (testuale o disegnata)"></p>
+  </div>
+
+  <button onclick="window.print()">Salva come PDF</button>
+
+<script>
+  const canvas = document.getElementById('signature-pad');
+  const ctx = canvas.getContext('2d');
+  let drawing = false;
+
+  canvas.addEventListener('mousedown', () => drawing = true);
+  canvas.addEventListener('mouseup', () => drawing = false);
+  canvas.addEventListener('mouseout', () => drawing = false);
+  canvas.addEventListener('mousemove', draw);
+
+  canvas.addEventListener('touchstart', (e) => {
+    drawing = true;
+    drawTouch(e);
+  }, { passive: true });
+
+  canvas.addEventListener('touchend', () => drawing = false, { passive: true });
+  canvas.addEventListener('touchcancel', () => drawing = false, { passive: true });
+  canvas.addEventListener('touchmove', drawTouch, { passive: true });
+
+  function draw(e) {
+    if (!drawing) return;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+  }
+
+  function drawTouch(e) {
+    if (!drawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+
+  function clearSignature() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+  }
+</script>
+
+  <button onclick="inviaModulo('modulo_autisti')">📧 Invia via Email</button>
+  <script src="/static/firma.js"></script>
+
+<script>
+function inviaModulo(modulo) {
+  const inputs = document.querySelectorAll('input');
+  let formData = {};
+  inputs.forEach(input => {
+    const label = input.previousSibling?.textContent?.trim() || input.placeholder || 'campo';
+    formData[label] = input.value;
+  });
+
+  const firma1 = document.getElementById('firma1')?.toDataURL() || "";
+  const firma2 = document.getElementById('firma2')?.toDataURL() || "";
+  const firmaCanvas = document.getElementById('signature-pad')?.toDataURL() || "";
+
+  fetch("/invia_modulo", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      formData: formData,
+      firma1: firma1 || firmaCanvas,
+      firma2: firma2 || "",
+      modulo: modulo
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.errore) {
+      alert("Errore: " + data.errore);
+    } else {
+      alert("Modulo inviato con successo!");
+    }
+  })
+  .catch(err => {
+    alert("Errore durante l'invio.");
+    console.error(err);
+  });
+}
+</script>
+
+
+<script>
+function disableScrollWhileSigning(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  let isSigning = false;
+
+  canvas.addEventListener("touchstart", function(e) {
+    isSigning = true;
+    document.body.style.overflow = "hidden";
+  });
+
+  canvas.addEventListener("touchend", function(e) {
+    isSigning = false;
+    document.body.style.overflow = "auto";
+  });
+
+  canvas.addEventListener("touchmove", function(e) {
+    if (isSigning) e.preventDefault();
+  }, { passive: false });
+}
+window.onload = () => {
+  disableScrollWhileSigning("firma1");
+  disableScrollWhileSigning("firma2");
+  disableScrollWhileSigning("signature-pad");
+};
+</script>
+
+</body>
+</html>
+
+</html>
