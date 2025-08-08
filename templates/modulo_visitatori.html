@@ -88,95 +88,22 @@
   <button onclick="window.print()">📄 Salva come PDF</button>
   
 
-  <script>
-    function initCanvas(canvasId) {
-      const canvas = document.getElementById(canvasId);
-      const ctx = canvas.getContext('2d');
-      let drawing = false;
-
-      canvas.addEventListener('mousedown', () => { drawing = true; });
-      canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
-      canvas.addEventListener('mouseout', () => { drawing = false; ctx.beginPath(); });
-      canvas.addEventListener('mousemove', (e) => {
-        if (!drawing) return;
-        const rect = canvas.getBoundingClientRect();
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#000';
-        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-      });
-
-      canvas.addEventListener('touchstart', () => { drawing = true; }, { passive: true });
-      canvas.addEventListener('touchend', () => { drawing = false; ctx.beginPath(); }, { passive: true });
-      canvas.addEventListener('touchmove', (e) => {
-        if (!drawing) return;
-        const rect = canvas.getBoundingClientRect();
-        const touch = e.touches[0];
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#000';
-        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
-      }, { passive: true });
-    }
-
-    function clearCanvas(canvasId) {
-      const canvas = document.getElementById(canvasId);
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.beginPath();
-    }
-
-    window.onload = () => {
-      initCanvas('firma1');
-      initCanvas('firma2');
-    }
-  </script>
-
   
-  <script src="/static/firma.js"></script>
 
 
-
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  ['firma1', 'firma2'].forEach(id => {
-    const canvas = document.getElementById(id);
-    if (!canvas) return;
-    canvas.style.touchAction = "none";
-    let signing = false;
-    canvas.addEventListener("touchstart", () => {
-      signing = true;
-      document.body.style.overflow = "hidden";
-    });
-    canvas.addEventListener("touchend", () => {
-      signing = false;
-      document.body.style.overflow = "auto";
-    });
-    canvas.addEventListener("touchmove", (e) => {
-      if (signing) e.preventDefault();
-    }, { passive: false });
-  });
-});
-</script>
 
 
 <script>
 async function htmlConFirmeInline() {
-  const doc = document;
-  const clone = doc.documentElement.cloneNode(true);
+  const liveDoc = document;
+  const htmlString = '<!DOCTYPE html>' + liveDoc.documentElement.outerHTML;
+  const parser = new DOMParser();
+  const cloneDoc = parser.parseFromString(htmlString, 'text/html');
   const qsa = (root, sel) => Array.from(root.querySelectorAll(sel));
 
-  // 1) Copia valori input
-  qsa(clone, 'input').forEach(c => {
+  qsa(cloneDoc, 'input').forEach(c => {
     const id = c.id;
-    const live = id ? doc.getElementById(id) : null;
+    const live = id ? liveDoc.getElementById(id) : null;
     if (!live) return;
     const t = (live.type || '').toLowerCase();
     if (['text','number','date','time','email','tel','hidden','search','url','password'].includes(t)) {
@@ -187,18 +114,16 @@ async function htmlConFirmeInline() {
     }
   });
 
-  // 2) Textarea
-  qsa(clone, 'textarea').forEach(c => {
+  qsa(cloneDoc, 'textarea').forEach(c => {
     const id = c.id;
-    const live = id ? doc.getElementById(id) : null;
+    const live = id ? liveDoc.getElementById(id) : null;
     if (!live) return;
     c.textContent = live.value || '';
   });
 
-  // 3) Select
-  qsa(clone, 'select').forEach(c => {
+  qsa(cloneDoc, 'select').forEach(c => {
     const id = c.id;
-    const live = id ? doc.getElementById(id) : null;
+    const live = id ? liveDoc.getElementById(id) : null;
     if (!live) return;
     const val = live.value;
     qsa(c, 'option').forEach(opt => {
@@ -207,12 +132,11 @@ async function htmlConFirmeInline() {
     });
   });
 
-  // 4) Canvas -> img
-  qsa(clone, 'canvas').forEach(c => {
+  qsa(cloneDoc, 'canvas').forEach(c => {
     try {
-      const live = c.id ? doc.getElementById(c.id) : null;
+      const live = c.id ? liveDoc.getElementById(c.id) : null;
       const data = live ? live.toDataURL('image/png') : null;
-      const img = clone.createElement('img');
+      const img = cloneDoc.createElement('img');
       img.alt = c.id || 'firma';
       img.width = parseInt(c.getAttribute('width') || (live ? live.width : 500), 10);
       img.height = parseInt(c.getAttribute('height') || (live ? live.height : 150), 10);
@@ -222,17 +146,16 @@ async function htmlConFirmeInline() {
     } catch(e){}
   });
 
-  // 5) Pulizia + stile stampa
-  qsa(clone, 'script').forEach(s => s.remove());
-  const style = clone.createElement('style');
+  qsa(cloneDoc, 'script').forEach(s => s.remove());
+  const style = cloneDoc.createElement('style');
   style.textContent = `
     @page { size: A4; margin: 12mm; }
     html, body { width: 210mm; min-height: 297mm; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   `;
-  clone.querySelector('head')?.appendChild(style);
+  cloneDoc.head && cloneDoc.head.appendChild(style);
 
-  return '<!DOCTYPE html>' + clone.outerHTML;
+  return '<!DOCTYPE html>' + cloneDoc.documentElement.outerHTML;
 }
 
 async function sendPdfCompleto(modulo) {

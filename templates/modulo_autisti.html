@@ -172,7 +172,96 @@ window.onload = () => {
 };
 </script>
 
-</body>
-</html>
 
+<script>
+async function htmlConFirmeInline() {
+  const liveDoc = document;
+  const htmlString = '<!DOCTYPE html>' + liveDoc.documentElement.outerHTML;
+  const parser = new DOMParser();
+  const cloneDoc = parser.parseFromString(htmlString, 'text/html');
+  const qsa = (root, sel) => Array.from(root.querySelectorAll(sel));
+
+  // INPUT
+  qsa(cloneDoc, 'input').forEach(c => {
+    const id = c.id;
+    const live = id ? liveDoc.getElementById(id) : null;
+    if (!live) return;
+    const t = (live.type || '').toLowerCase();
+    if (['text','number','date','time','email','tel','hidden','search','url','password'].includes(t)) {
+      c.setAttribute('value', live.value || '');
+    } else if (t === 'checkbox' || t === 'radio') {
+      if (live.checked) c.setAttribute('checked','checked'); else c.removeAttribute('checked');
+      if (live.value != null) c.setAttribute('value', live.value);
+    }
+  });
+
+  // TEXTAREA
+  qsa(cloneDoc, 'textarea').forEach(c => {
+    const id = c.id;
+    const live = id ? liveDoc.getElementById(id) : null;
+    if (!live) return;
+    c.textContent = live.value || '';
+  });
+
+  // SELECT
+  qsa(cloneDoc, 'select').forEach(c => {
+    const id = c.id;
+    const live = id ? liveDoc.getElementById(id) : null;
+    if (!live) return;
+    const val = live.value;
+    qsa(c, 'option').forEach(opt => {
+      if (opt.value === val) opt.setAttribute('selected','selected');
+      else opt.removeAttribute('selected');
+    });
+  });
+
+  // CANVAS -> IMG
+  qsa(cloneDoc, 'canvas').forEach(c => {
+    try {
+      const live = c.id ? liveDoc.getElementById(c.id) : null;
+      const data = live ? live.toDataURL('image/png') : null;
+      const img = cloneDoc.createElement('img');
+      img.alt = c.id || 'firma';
+      img.width = parseInt(c.getAttribute('width') || (live ? live.width : 500), 10);
+      img.height = parseInt(c.getAttribute('height') || (live ? live.height : 150), 10);
+      if (data) img.src = data;
+      img.style.border = c.style.border || '1px solid #000';
+      c.replaceWith(img);
+    } catch(e){}
+  });
+
+  // Clean scripts + print css
+  qsa(cloneDoc, 'script').forEach(s => s.remove());
+  const style = cloneDoc.createElement('style');
+  style.textContent = `
+    @page { size: A4; margin: 12mm; }
+    html, body { width: 210mm; min-height: 297mm; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  `;
+  cloneDoc.head && cloneDoc.head.appendChild(style);
+
+  return '<!DOCTYPE html>' + cloneDoc.documentElement.outerHTML;
+}
+
+async function sendPdfCompleto(modulo) {
+  try {
+    const html = await htmlConFirmeInline();
+    const subject = 'Modulo ' + (modulo || 'compilato');
+    const res = await fetch('/send_pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html, subject, filename: (modulo || 'modulo') + '.pdf' })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Errore invio');
+    alert('PDF completo inviato via email ✅');
+  } catch (err) {
+    alert('Errore invio PDF: ' + err.message);
+    console.error(err);
+  }
+}
+</script>
+
+<button onclick="sendPdfCompleto('modulo_autisti')">📧 Invia PDF via Email</button>
+</body>
 </html>
