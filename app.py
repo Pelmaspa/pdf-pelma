@@ -31,7 +31,7 @@ def send_pdf():
         if not html or '<html' not in html.lower():
             return jsonify({'success': False, 'error': 'HTML non valido o mancante'}), 400
 
-        # Create a fresh event loop in this thread
+        # Fresh event loop per thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
@@ -65,7 +65,6 @@ async def html_to_pdf(html: str) -> bytes:
     from pyppeteer import launch
     executable_path = os.environ.get("PUPPETEER_EXECUTABLE_PATH")
     launch_kwargs = {
-        # IMPORTANT: disable signal handlers because we're not in the main thread
         "handleSIGINT": False,
         "handleSIGTERM": False,
         "handleSIGHUP": False,
@@ -77,7 +76,9 @@ async def html_to_pdf(html: str) -> bytes:
     browser = await launch(**launch_kwargs)
     try:
         page = await browser.newPage()
-        await page.setContent(html, waitUntil='networkidle0')
+        # pyppeteer setContent doesn't accept kw 'waitUntil' in some builds; set content then wait a moment
+        await page.setContent(html)
+        await page.waitForTimeout(300)  # small settle time
         pdf = await page.pdf({
             'format': 'A4',
             'printBackground': True,
