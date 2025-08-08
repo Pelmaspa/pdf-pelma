@@ -173,7 +173,7 @@ async function htmlConFirmeInline() {
   const clone = doc.documentElement.cloneNode(true);
   const qsa = (root, sel) => Array.from(root.querySelectorAll(sel));
 
-  // 1) Copia valori degli INPUT
+  // 1) Copia valori input
   qsa(clone, 'input').forEach(c => {
     const id = c.id;
     const live = id ? doc.getElementById(id) : null;
@@ -187,7 +187,7 @@ async function htmlConFirmeInline() {
     }
   });
 
-  // 2) Copia TEXTAREA
+  // 2) Textarea
   qsa(clone, 'textarea').forEach(c => {
     const id = c.id;
     const live = id ? doc.getElementById(id) : null;
@@ -195,7 +195,7 @@ async function htmlConFirmeInline() {
     c.textContent = live.value || '';
   });
 
-  // 3) Copia SELECT
+  // 3) Select
   qsa(clone, 'select').forEach(c => {
     const id = c.id;
     const live = id ? doc.getElementById(id) : null;
@@ -207,7 +207,7 @@ async function htmlConFirmeInline() {
     });
   });
 
-  // 4) Canvas delle firme -> <img src="data:...">
+  // 4) Canvas -> img
   qsa(clone, 'canvas').forEach(c => {
     try {
       const live = c.id ? doc.getElementById(c.id) : null;
@@ -219,10 +219,10 @@ async function htmlConFirmeInline() {
       if (data) img.src = data;
       img.style.border = c.style.border || '1px solid #000';
       c.replaceWith(img);
-    } catch(e){ /* ignore */ }
+    } catch(e){}
   });
 
-  // 5) Rimuovi script e aggiungi stile stampa
+  // 5) Pulizia + stile stampa
   qsa(clone, 'script').forEach(s => s.remove());
   const style = clone.createElement('style');
   style.textContent = `
@@ -235,23 +235,26 @@ async function htmlConFirmeInline() {
   return '<!DOCTYPE html>' + clone.outerHTML;
 }
 
-// Opzionale: funzione chiamabile da un bottone esterno o da index.html
 async function sendPdfCompleto(modulo) {
-  const html = await htmlConFirmeInline();
-  const subject = 'Modulo ' + (modulo || 'compilato');
-  const res = await fetch('/send_pdf', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ html, subject, filename: (modulo || 'modulo') + '.pdf' })
-  });
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    alert('Errore invio PDF: ' + (data.error || 'sconosciuto'));
-  } else {
+  try {
+    const html = await htmlConFirmeInline();
+    const subject = 'Modulo ' + (modulo || 'compilato');
+    const res = await fetch('/send_pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html, subject, filename: (modulo || 'modulo') + '.pdf' })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Errore invio');
     alert('PDF completo inviato via email ✅');
+  } catch (err) {
+    alert('Errore invio PDF: ' + err.message);
+    console.error(err);
   }
 }
 </script>
 
+
+<button onclick="sendPdfCompleto('modulo_visitatori')">📧 Invia PDF via Email</button>
 </body>
 </html>
