@@ -1,73 +1,75 @@
+
 import os
+import asyncio
 import smtplib
-import base64
-from flask import Flask, render_template, request, jsonify
 from email.message import EmailMessage
+from flask import Flask, render_template, request, jsonify
 from datetime import datetime
-from io import BytesIO
-from fpdf import FPDF
 
 app = Flask(__name__)
 
-@app.route("/")
+@app.route('/')
 def index():
-    return render_template("index.html")
+    return render_template('index.html')
 
-@app.route("/modulo_visitatori")
+@app.route('/modulo_visitatori')
 def modulo_visitatori():
-    return render_template("modulo_visitatori.html")
+    return render_template('modulo_visitatori.html')
 
-@app.route("/modulo_autisti")
+@app.route('/modulo_autisti')
 def modulo_autisti():
-    return render_template("modulo_autisti.html")
+    return render_template('modulo_autisti.html')
 
-@app.route("/invia_modulo", methods=["POST"])
-def invia_modulo():
+@app.route('/send_pdf', methods=['POST'])
+def send_pdf():
     try:
-        data = request.get_json()
-        print("DEBUG - JSON ricevuto:", data)
+        data = request.get_json(force=True)
+        html = data.get('html', '')
+        subject = data.get('subject', 'Modulo compilato')
+        filename = data.get('filename', f"modulo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf")
 
-        form_data = data.get("formData", {})
-        firma1 = data.get("firma1", "")
-        firma2 = data.get("firma2", "")
-        modulo = data.get("modulo", "modulo")
+        if not html or '<html' not in html.lower():
+            return jsonify({'success': False, 'error': 'HTML non valido o mancante'}), 400
 
-        # Se form_data è vuoto, restituisco errore chiaro
-        if not form_data:
-            return jsonify({"errore": "Chiave 'formData' mancante nel JSON ricevuto"}), 400
-
-        # Crea PDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt=f"Modulo: {modulo} - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True)
-
-        for k, v in form_data.items():
-            pdf.cell(200, 10, txt=f"{k}: {v}", ln=True)
-
-        buffer = BytesIO()
-        pdf.output(buffer)
-        buffer.seek(0)
+        pdf_bytes = asyncio.get_event_loop().run_until_complete(html_to_pdf(html))
 
         msg = EmailMessage()
-        msg["Subject"] = f"Modulo {modulo} compilato"
-        msg["From"] = "pelma.aziendale1@gmail.com"
-        msg["To"] = "francesca.podesta@pelma.it"
-        msg.set_content("In allegato il modulo compilato.")
+        msg['Subject'] = subject
+        msg['From'] = 'pelma.aziendale1@gmail.com'
+        msg['To'] = 'francesca.podesta@pelma.it'
+        msg.set_content('In allegato il PDF completo del modulo, firme incluse.')
+        msg.add_attachment(pdf_bytes, maintype='application', subtype='pdf', filename=filename)
 
-        msg.add_attachment(buffer.read(), maintype="application", subtype="pdf", filename=f"{modulo}.pdf")
+        gmail_user = 'pelma.aziendale1@gmail.com'
+        gmail_pass = os.environ.get('GMAIL_APP_PASSWORD')
+        if not gmail_pass:
+            return jsonify({'success': False, 'error': 'Variabile GMAIL_APP_PASSWORD non impostata sul server'}), 500
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login("pelma.aziendale1@gmail.com", os.environ["GMAIL_APP_PASSWORD"])
+        import smtplib
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(gmail_user, gmail_pass)
             smtp.send_message(msg)
 
-        return jsonify({"esito": "ok"})
-
+        return jsonify({'success': True})
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"errore": str(e)}), 500
+        import traceback; traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+async def html_to_pdf(html: str) -> bytes:
+    from pyppeteer import launch
+    browser = await launch(args=['--no-sandbox','--disable-web-security','--disable-dev-shm-usage'])
+    try:
+        page = await browser.newPage()
+        await page.setContent(html, waitUntil='networkidle0')
+        pdf = await page.pdf({
+            'format': 'A4',
+            'printBackground': True,
+            'margin': {'top':'12mm','right':'12mm','bottom':'12mm','left':'12mm'}
+        })
+        return pdf
+    finally:
+        await browser.close()
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
