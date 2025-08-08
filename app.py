@@ -31,8 +31,15 @@ def send_pdf():
         if not html or '<html' not in html.lower():
             return jsonify({'success': False, 'error': 'HTML non valido o mancante'}), 400
 
-        pdf_bytes = asyncio.get_event_loop().run_until_complete(html_to_pdf(html))
+        # Create a fresh event loop in this thread to avoid "no current event loop" errors
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            pdf_bytes = loop.run_until_complete(html_to_pdf(html))
+        finally:
+            loop.close()
 
+        # Prepare and send email
         msg = EmailMessage()
         msg['Subject'] = subject
         msg['From'] = 'pelma.aziendale1@gmail.com'
@@ -45,7 +52,6 @@ def send_pdf():
         if not gmail_pass:
             return jsonify({'success': False, 'error': 'Variabile GMAIL_APP_PASSWORD non impostata sul server'}), 500
 
-        import smtplib
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(gmail_user, gmail_pass)
             smtp.send_message(msg)
@@ -56,8 +62,16 @@ def send_pdf():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 async def html_to_pdf(html: str) -> bytes:
+    # Launch Chromium via pyppeteer; allow overriding executable path via env if needed on Render
     from pyppeteer import launch
-    browser = await launch(args=['--no-sandbox','--disable-web-security','--disable-dev-shm-usage'])
+    executable_path = os.environ.get("PUPPETEER_EXECUTABLE_PATH")
+    launch_kwargs = {
+        "args": ["--no-sandbox","--disable-web-security","--disable-dev-shm-usage"]
+    }
+    if executable_path:
+        launch_kwargs["executablePath"] = executable_path
+
+    browser = await launch(**launch_kwargs)
     try:
         page = await browser.newPage()
         await page.setContent(html, waitUntil='networkidle0')
@@ -71,5 +85,6 @@ async def html_to_pdf(html: str) -> bytes:
         await browser.close()
 
 if __name__ == '__main__':
+    # Local dev run (on Render usa gunicorn app:app)
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
