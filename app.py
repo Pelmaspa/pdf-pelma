@@ -31,7 +31,7 @@ def send_pdf():
         if not html or '<html' not in html.lower():
             return jsonify({'success': False, 'error': 'HTML non valido o mancante'}), 400
 
-        # Create a fresh event loop in this thread to avoid "no current event loop" errors
+        # Create a fresh event loop in this thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
@@ -39,7 +39,7 @@ def send_pdf():
         finally:
             loop.close()
 
-        # Prepare and send email
+        # Email
         msg = EmailMessage()
         msg['Subject'] = subject
         msg['From'] = 'pelma.aziendale1@gmail.com'
@@ -62,10 +62,13 @@ def send_pdf():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 async def html_to_pdf(html: str) -> bytes:
-    # Launch Chromium via pyppeteer; allow overriding executable path via env if needed on Render
     from pyppeteer import launch
     executable_path = os.environ.get("PUPPETEER_EXECUTABLE_PATH")
     launch_kwargs = {
+        # IMPORTANT: disable signal handlers because we're not in the main thread
+        "handleSIGINT": False,
+        "handleSIGTERM": False,
+        "handleSIGHUP": False,
         "args": ["--no-sandbox","--disable-web-security","--disable-dev-shm-usage"]
     }
     if executable_path:
@@ -85,6 +88,5 @@ async def html_to_pdf(html: str) -> bytes:
         await browser.close()
 
 if __name__ == '__main__':
-    # Local dev run (on Render usa gunicorn app:app)
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
