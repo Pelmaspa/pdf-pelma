@@ -20,6 +20,10 @@ def modulo_visitatori():
 def modulo_autisti():
     return render_template('modulo_autisti.html')
 
+@app.route('/healthz')
+def healthz():
+    return "ok", 200
+
 @app.route('/send_pdf', methods=['POST'])
 def send_pdf():
     try:
@@ -76,9 +80,9 @@ async def html_to_pdf(html: str) -> bytes:
     browser = await launch(**launch_kwargs)
     try:
         page = await browser.newPage()
-        # pyppeteer setContent doesn't accept kw 'waitUntil' in some builds; set content then wait a moment
+        # Some pyppeteer builds don't support waitUntil kw; and no waitForTimeout either. Use a tiny async sleep.
         await page.setContent(html)
-        await page.waitForTimeout(300)  # small settle time
+        await asyncio.sleep(0.4)  # let layout settle
         pdf = await page.pdf({
             'format': 'A4',
             'printBackground': True,
