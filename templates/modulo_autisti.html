@@ -87,91 +87,9 @@
 
   <button onclick="window.print()">Salva come PDF</button>
 
-<script>
-  const canvas = document.getElementById('signature-pad');
-  const ctx = canvas.getContext('2d');
-  let drawing = false;
-
-  canvas.addEventListener('mousedown', () => drawing = true);
-  canvas.addEventListener('mouseup', () => drawing = false);
-  canvas.addEventListener('mouseout', () => drawing = false);
-  canvas.addEventListener('mousemove', draw);
-
-  canvas.addEventListener('touchstart', (e) => {
-    drawing = true;
-    drawTouch(e);
-  }, { passive: true });
-
-  canvas.addEventListener('touchend', () => drawing = false, { passive: true });
-  canvas.addEventListener('touchcancel', () => drawing = false, { passive: true });
-  canvas.addEventListener('touchmove', drawTouch, { passive: true });
-
-  function draw(e) {
-    if (!drawing) return;
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(e.offsetX, e.offsetY);
-  }
-
-  function drawTouch(e) {
-    if (!drawing) return;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  }
-
-  function clearSignature() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-  }
-</script>
-
-  
-  <script src="/static/firma.js"></script>
 
 
-
-
-<script>
-function disableScrollWhileSigning(canvasId) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-
-  let isSigning = false;
-
-  canvas.addEventListener("touchstart", function(e) {
-    isSigning = true;
-    document.body.style.overflow = "hidden";
-  });
-
-  canvas.addEventListener("touchend", function(e) {
-    isSigning = false;
-    document.body.style.overflow = "auto";
-  });
-
-  canvas.addEventListener("touchmove", function(e) {
-    if (isSigning) e.preventDefault();
-  }, { passive: false });
-}
-window.onload = () => {
-  disableScrollWhileSigning("firma1");
-  disableScrollWhileSigning("firma2");
-  disableScrollWhileSigning("signature-pad");
-};
-</script>
-
+<button onclick="sendPdfCompleto('modulo_autisti')">📧 Invia PDF via Email</button>
 
 <script>
 async function htmlConFirmeInline() {
@@ -181,11 +99,12 @@ async function htmlConFirmeInline() {
   const cloneDoc = parser.parseFromString(htmlString, 'text/html');
   const qsa = (root, sel) => Array.from(root.querySelectorAll(sel));
 
-  // INPUT
-  qsa(cloneDoc, 'input').forEach(c => {
-    const id = c.id;
-    const live = id ? liveDoc.getElementById(id) : null;
-    if (!live) return;
+  const liveInputs = qsa(liveDoc, 'input');
+  const cloneInputs = qsa(cloneDoc, 'input');
+  const minInputs = Math.min(liveInputs.length, cloneInputs.length);
+  for (let i = 0; i < minInputs; i++) {
+    const live = liveInputs[i];
+    const c = cloneInputs[i];
     const t = (live.type || '').toLowerCase();
     if (['text','number','date','time','email','tel','hidden','search','url','password'].includes(t)) {
       c.setAttribute('value', live.value || '');
@@ -193,44 +112,44 @@ async function htmlConFirmeInline() {
       if (live.checked) c.setAttribute('checked','checked'); else c.removeAttribute('checked');
       if (live.value != null) c.setAttribute('value', live.value);
     }
-  });
+  }
 
-  // TEXTAREA
-  qsa(cloneDoc, 'textarea').forEach(c => {
-    const id = c.id;
-    const live = id ? liveDoc.getElementById(id) : null;
-    if (!live) return;
-    c.textContent = live.value || '';
-  });
+  const liveTextareas = qsa(liveDoc, 'textarea');
+  const cloneTextareas = qsa(cloneDoc, 'textarea');
+  const minTA = Math.min(liveTextareas.length, cloneTextareas.length);
+  for (let i = 0; i < minTA; i++) {
+    cloneTextareas[i].textContent = liveTextareas[i].value || '';
+  }
 
-  // SELECT
-  qsa(cloneDoc, 'select').forEach(c => {
-    const id = c.id;
-    const live = id ? liveDoc.getElementById(id) : null;
-    if (!live) return;
-    const val = live.value;
-    qsa(c, 'option').forEach(opt => {
+  const liveSelects = qsa(liveDoc, 'select');
+  const cloneSelects = qsa(cloneDoc, 'select');
+  const minSel = Math.min(liveSelects.length, cloneSelects.length);
+  for (let i = 0; i < minSel; i++) {
+    const val = liveSelects[i].value;
+    qsa(cloneSelects[i], 'option').forEach(opt => {
       if (opt.value === val) opt.setAttribute('selected','selected');
       else opt.removeAttribute('selected');
     });
-  });
+  }
 
-  // CANVAS -> IMG
-  qsa(cloneDoc, 'canvas').forEach(c => {
+  const liveCanvases = qsa(liveDoc, 'canvas');
+  const cloneCanvases = qsa(cloneDoc, 'canvas');
+  const len = Math.min(liveCanvases.length, cloneCanvases.length);
+  for (let i = 0; i < len; i++) {
+    const live = liveCanvases[i];
+    const c = cloneCanvases[i];
     try {
-      const live = c.id ? liveDoc.getElementById(c.id) : null;
-      const data = live ? live.toDataURL('image/png') : null;
+      const data = live.toDataURL('image/png');
       const img = cloneDoc.createElement('img');
       img.alt = c.id || 'firma';
-      img.width = parseInt(c.getAttribute('width') || (live ? live.width : 500), 10);
-      img.height = parseInt(c.getAttribute('height') || (live ? live.height : 150), 10);
-      if (data) img.src = data;
+      img.width = parseInt(c.getAttribute('width') || live.width || 500, 10);
+      img.height = parseInt(c.getAttribute('height') || live.height || 150, 10);
+      img.src = data;
       img.style.border = c.style.border || '1px solid #000';
       c.replaceWith(img);
-    } catch(e){}
-  });
+    } catch (e) {}
+  }
 
-  // Clean scripts + print css
   qsa(cloneDoc, 'script').forEach(s => s.remove());
   const style = cloneDoc.createElement('style');
   style.textContent = `
@@ -262,6 +181,5 @@ async function sendPdfCompleto(modulo) {
 }
 </script>
 
-<button onclick="sendPdfCompleto('modulo_autisti')">📧 Invia PDF via Email</button>
 </body>
 </html>
